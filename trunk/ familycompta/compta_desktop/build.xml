@@ -1,0 +1,110 @@
+<project name="compta" default="all" basedir=".">
+	<path id="classpath" />
+
+	<target name="init">
+		<property file="build.properties" />
+		<property name="project.buildDir" value="build/${project.name}_${project.version}" />
+		<property name="project.buildZip" value="build/${project.name}_${project.version}.zip" />
+	</target>
+
+	<target name="clean" depends="init">
+		<delete includeEmptyDirs="true" failonerror="false">
+			<fileset dir="${project.buildDir}" />
+			<fileset file="${project.buildZip}" />
+		</delete>
+	</target>
+
+	<target name="makedirs" depends="init">
+		<mkdir dir="${project.buildDir}" />
+	</target>
+
+	<target name="compile" depends="makedirs">
+
+		<!-- copy source -->
+		<mkdir dir="${project.buildDir}/src" />
+		<copy todir="${project.buildDir}/src">
+			<fileset dir="src">
+				<exclude name="*CVS*" />
+				<exclude name=".classpath" />
+				<exclude name=".project" />
+			</fileset>
+		</copy>
+
+		<!-- copy required libraries -->
+		<mkdir dir="${project.buildDir}/lib" />
+		<copy todir="${project.buildDir}/lib">
+			<fileset dir="lib">
+				<include name="**/*.jar" />
+			</fileset>
+		</copy>
+
+		<!-- copy log4j.properties -->
+		<mkdir dir="${project.buildDir}/log" />
+		<copy todir="${project.buildDir}/log">
+			<fileset dir="log">
+				<include name="**/*.properties" />
+			</fileset>
+		</copy>
+
+		<!-- compile -->
+		<mkdir dir="${project.buildDir}/classes" />
+		<javac destdir="${project.buildDir}/classes">
+			<src path="${project.buildDir}/src" />
+			<classpath>
+				<fileset dir="${project.buildDir}/lib">
+					<include name="**/*.jar" />
+				</fileset>
+			</classpath>
+
+		</javac>
+
+		<!-- copy ressources to classes dir -->
+		<copy todir="${project.buildDir}/classes">
+			<fileset dir="src">
+				<include name="**/*.png" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="buildJar" depends="compile">
+		<jar jarfile="${project.buildDir}/lib/${project.name}.jar" update="yes">
+			<manifest>
+				<attribute name="Built-By" value="${project.user}" />
+				<attribute name="Main-Class" value="${project.mainClass}" />
+				<attribute name="Class-Path" value="${project.classpath}" />
+				<attribute name="Version" value="${project.version}" />
+			</manifest>
+			<fileset dir="${project.buildDir}/classes">
+				<include name="**/*" />
+			</fileset>
+		</jar>
+
+		<!-- copy launch scripts -->
+		<copy todir="${project.buildDir}">
+			<fileset file="compta.bat" />
+			<fileset file="compta.sh" />
+		</copy>
+
+	</target>
+
+	<target name="javadoc" depends="compile">
+		<mkdir dir="${project.buildDir}/api" />
+		<javadoc sourcepath="${project.buildDir}/src" destdir="${project.buildDir}/api" packagenames="compta.*">
+			<classpath>
+				<fileset dir="${project.buildDir}/lib">
+					<include name="**/*.jar" />
+				</fileset>
+			</classpath>
+		</javadoc>
+	</target>
+
+	<target name="createZip" depends="makedirs">
+		<!-- create the zip file -->
+		<zip destfile="${project.buildZip}">
+			<zipfileset dir="${project.buildDir}" />
+		</zip>
+	</target>
+
+	<target name="all" depends="clean, makedirs, buildJar, javadoc, createZip" />
+
+</project>
